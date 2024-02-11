@@ -7,7 +7,7 @@ import Button from "@/ui/Button";
 import FileInput from "@/ui/FileInput";
 import Textarea from "@/ui/Textarea";
 
-function CreateScheduleForm({ cabinToEdit, closeModal }) {
+function EditScheduleForm({ cabinToEdit, closeModal }) {
   const { register, handleSubmit, formState, getValues } = useForm();
   const { errors } = formState;
   const onSubmit = () => {
@@ -97,4 +97,4 @@ function CreateScheduleForm({ cabinToEdit, closeModal }) {
   );
 }
 
-export default CreateScheduleForm;
+export default EditScheduleForm;
