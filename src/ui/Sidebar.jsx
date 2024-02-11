@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { NavLink } from "react-router-dom";
+import {useLogout} from "@/features/authentication/useLogout.js";
 
 const StyledSidebar = styled.aside`
   background-color: var(--color-grey-0);
@@ -29,7 +30,8 @@ const MenuLink = styled(NavLink)`
 
 
 function Sidebar() {
-  return (
+
+    return (
       <StyledSidebar>
         <MenuLink to="/dashboard">일정 보기</MenuLink>
         <MenuLink to="/add">일정 추가</MenuLink>
@@ -37,7 +39,6 @@ function Sidebar() {
         <MenuLink to="/categories">카테고리</MenuLink>
         <MenuLink to="/settings">설정</MenuLink>
         <MenuLink to="/help">도움말/지원</MenuLink>
-        <MenuLink to="/logout">로그아웃</MenuLink>
       </StyledSidebar>
   );
 }

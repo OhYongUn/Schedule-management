@@ -1,5 +1,7 @@
 import styled from "styled-components";
 import { NavLink } from "react-router-dom";
+import { useLogout } from "@/features/authentication/useLogout.js";
+import Button from "@/ui/Button.jsx";
 
 const StyledHeader = styled.header`
   background-color: var(--color-grey-0);
@@ -30,16 +32,15 @@ const StyledNavLink = styled(NavLink)`
 `;
 
 function Header() {
+  const { logout, isLoading } = useLogout();
+
   return (
-      <StyledHeader>
-        <Logo>MyApp</Logo>
-        <Nav>
-          <StyledNavLink to="/home">홈</StyledNavLink>
-          <StyledNavLink to="/schedule">일정 보기</StyledNavLink>
-          <StyledNavLink to="/settings">설정</StyledNavLink>
-        </Nav>
-        <StyledNavLink to="/logout">로그아웃</StyledNavLink>
-      </StyledHeader>
+    <StyledHeader>
+      <Logo>MyApp</Logo>
+      <Button onClick={() => logout()} disabled={isLoading}>
+        logOut
+      </Button>
+    </StyledHeader>
   );
 }
 
