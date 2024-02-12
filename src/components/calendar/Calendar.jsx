@@ -16,24 +16,30 @@ function Calendar() {
   const [isOpenEditModal, setIsOpenEditModal] = useState(false);
   const [lastClick, setLastClick] = useState(null);
   const [lastClickTime, setLastClickTime] = useState(null);
-
+  const [selectedDate, setSelectedDate] = useState(null); // 등록을 위한 선택된 날짜
+  const [selectedEventId, setSelectedEventId] = useState(null);
   const handleDateClick = (arg) => {
-    const currentTime = new Date().getTime(); // 현재 클릭의 타임스탬프
+    const currentTime = new Date().getTime();
+
     if (lastClickTime && currentTime - lastClickTime < 300) {
       setIsOpenAddModal(true);
+      setSelectedDate(arg.dateStr);
+
       setTimeout(() => {
         buttonRef.current?.click();
       }, 0);
-      console.log("Double click detected on date:", arg.dateStr);
       setLastClickTime(null);
     } else {
       setLastClickTime(currentTime);
     }
   };
   const handleEventClick = ({ event }) => {
-    setIsOpenEditModal(true);
     const clickTime = new Date(); // 현재 클릭의 시간
+
     if (lastClick && clickTime - lastClick < 300) {
+      setIsOpenEditModal(true);
+      setSelectedEventId(event.id); // 클릭한 이벤트의 ID 저장
+
       setTimeout(() => {
         buttonRef.current?.click();
       }, 0);
@@ -79,12 +85,12 @@ function Calendar() {
       />
       {isOpenAddModal && (
           <ScheduleModal buttonRef={buttonRef} modalName="schedule-form">
-            <CreateScheduleForm />
+            <CreateScheduleForm selectedDate={selectedDate} />
           </ScheduleModal>
       )}
       {isOpenEditModal && (
           <ScheduleModal buttonRef={buttonRef} modalName="edit-schedule-form">
-            <EditScheduleForm />
+            <EditScheduleForm eventId={selectedEventId} />
           </ScheduleModal>
       )}
 

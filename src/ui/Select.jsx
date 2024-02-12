@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import React, { forwardRef } from 'react';
 
 const StyledSelect = styled.select`
     font-size: 1.4rem;
@@ -17,7 +18,7 @@ const StyledSelect = styled.select`
 const SelectWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 1rem;
 `;
 
 const Label = styled.label`
@@ -31,20 +32,19 @@ const Error = styled.span`
   margin-top: -0.5rem;
 `;
 
-const Select = ({ label, options, error, id, ...rest }) => {
+const Select = forwardRef(({ options, ...rest }, ref) => {
     return (
         <SelectWrapper>
-            {label && <Label htmlFor={id}>{label}</Label>}
-            <StyledSelect id={id} error={error} {...rest}>
-                {options.map(option => (
-                    <option key={option.value} value={option.value}>
+            <StyledSelect ref={ref} {...rest}>
+                {options.map((option) => (
+                    <option key={option.id} value={option.value}>
                         {option.label}
                     </option>
                 ))}
             </StyledSelect>
-            {error && <Error>{error}</Error>}
         </SelectWrapper>
     );
-};
+});
+
 
 export default Select;
