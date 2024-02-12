@@ -1,6 +1,6 @@
 import styled from "styled-components";
 
-const StyledFormRow = styled.div`
+const StyledFormRowWithDatePicker = styled.div`
   display: grid;
   align-items: center;
   grid-template-columns: 24rem 1fr 0.8fr;
@@ -19,14 +19,7 @@ const StyledFormRow = styled.div`
   &:not(:last-child) {
     border-bottom: 1px solid var(--color-grey-100);
   }
-
-  &:has(button) {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1.2rem;
-  }
 `;
-
 const Label = styled.label`
   font-weight: 500;
 `;
@@ -36,14 +29,14 @@ const Error = styled.span`
   color: var(--color-red-700);
 `;
 
-function FormRow({ label, error, children }) {
-  return (
-    <StyledFormRow>
-      {label && <Label htmlFor={children.props.id}>{label}</Label>}
-      {children}
-      {error && <Error>{error}</Error>}
-    </StyledFormRow>
-  );
+function FormRowWithDatePicker({ label, error, children }) {
+    return (
+        <StyledFormRowWithDatePicker>
+            {label && <Label htmlFor={children.props.id}>{label}</Label>}
+            {children}
+            {error && <Error>{error}</Error>}
+        </StyledFormRowWithDatePicker>
+    );
 }
 
-export default FormRow;
+export default FormRowWithDatePicker
