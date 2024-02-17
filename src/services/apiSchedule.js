@@ -9,12 +9,12 @@ export async function createEditSchedule(newSchedule, id) {
   if (newSchedule.image && newSchedule.image instanceof File) {
     originalFileName = newSchedule.image.name;
     const imageName = `${uuidv4()}-${originalFileName}`;
-    imagePath = `images/${imageName}`;
+    imagePath = `event-image/${imageName}`;
 
     // Supabase Storage에 이미지 업로드
     const { error: uploadError } = await supabase.storage
         .from("event-image")
-        .upload(imagePath, newSchedule.image);
+        .upload(imageName, newSchedule.image);
 
     if (uploadError) {
       console.error(uploadError);
