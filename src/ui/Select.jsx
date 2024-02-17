@@ -21,23 +21,12 @@ const SelectWrapper = styled.div`
   gap: 1rem;
 `;
 
-const Label = styled.label`
-  font-size: 1.2rem;
-  font-weight: bold;
-`;
-
-const Error = styled.span`
-  font-size: 1.2rem;
-  color: var(--color-red-500);
-  margin-top: -0.5rem;
-`;
-
 const Select = forwardRef(({ options, ...rest }, ref) => {
     return (
         <SelectWrapper>
             <StyledSelect ref={ref} {...rest}>
-                {options.map((option) => (
-                    <option key={option.id} value={option.value}>
+                {options.map((option, index) => (
+                    <option key={option.value} value={option.value}>
                         {option.label}
                     </option>
                 ))}

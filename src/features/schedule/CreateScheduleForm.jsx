@@ -12,9 +12,10 @@ import "react-datepicker/dist/react-datepicker.css";
 import FormRowWithDatePicker from "@/ui/FormRowWithDatePicker";
 import styled from "styled-components";
 import { ChromePicker } from "react-color";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGroup } from "@/features/group/useGroup.js";
 import { useCategory } from "@/features/category/useCategory.js";
+import { useCreateSchedule } from "@/features/schedule/useCreateSchedule.js";
 
 const StyledDatePicker = styled(DatePicker)`
   width: 100%;
@@ -22,24 +23,46 @@ const StyledDatePicker = styled(DatePicker)`
 
 function CreateScheduleForm({ selectedDate, closeModal }) {
   // 커스텀 훅을 사용하여 카테고리와 그룹 데이터를 불러옵니다.
-  const { categories, isLoadingCategories, categoriesError } = useCategory();
-  const { groups, isLoadingGroups, groupsError } = useGroup();
-  console.log("categories", categories);
-  console.log("groups", groups);
+  const { categories, isLoadingCategories } = useCategory();
+  const { groups, isLoadingGroups } = useGroup();
 
-  const { register, handleSubmit, control, setValue, formState } = useForm();
+  const {
+    register,
+    reset,
+    handleSubmit,
+    control,
+    setValue,
+    formState,
+    getValues,
+  } = useForm();
   const { errors } = formState;
+
+  const { isCreating, createSchedule } = useCreateSchedule();
+  const isWorking = isCreating;
+
+  useEffect(() => {
+    setValue("startDate", selectedDate);
+  }, [selectedDate, setValue]);
   const onSubmit = (data) => {
     console.log("Form data:", data);
-    // 여기에 데이터를 서버로 보내는 로직 추가
-    closeModal();
+      const image = typeof data.image === "string" ? data.image : data.image[0];
+
+      const { group_id, category_id, ...details } = getValues();
+    const eventData = {
+      group_id,
+      category_id,
+      details: JSON.stringify(details),
+    };
+    createSchedule(
+      { ...eventData,image },
+      {
+        onSuccess: () => {
+          reset();
+        },
+      },
+    );
   };
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    console.log("receipt", file);
-    setValue("receipt", file);
-  };
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
   const [selectedColor, setSelectedColor] = useState("#ffffff");
 
@@ -56,20 +79,13 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
 
   return (
     <Form onSubmit={handleSubmit(onSubmit)} type="modal">
-      <FormRow label="제목" error={errors?.eventName?.message}>
-        <Input
-          type="text"
-          id="title"
-          {...register("title", { required: "이벤트 이름이 필요합니다." })}
-        />
-      </FormRow>
-
       {isLoadingGroups ? (
         <div>Loading categories...</div>
       ) : (
         <FormRow label="그룹">
           <Select
-            {...register("groupId")}
+            disabled={isWorking}
+            {...register("group_id")}
             options={groups?.map((group) => ({
               label: group.name,
               value: group.group_id,
@@ -83,7 +99,8 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
       ) : (
         <FormRow label="카테고리">
           <Select
-            {...register("categoryId")}
+            disabled={isWorking}
+            {...register("category_id")}
             options={categories.map((category) => ({
               label: category.name,
               value: category.category_id,
@@ -92,12 +109,28 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
           />
         </FormRow>
       )}
-
+      <FormRow label="제목" error={errors?.eventName?.message}>
+        <Input
+          disabled={isWorking}
+          type="text"
+          id="title"
+          {...register("title", { required: "이벤트 이름이 필요합니다." })}
+        />
+      </FormRow>
+      <FormRow label="금액" error={errors?.eventName?.message}>
+        <Input
+          disabled={isWorking}
+          type="number"
+          id="amount"
+          {...register("amount", { required: "금액이 필요합니다." })}
+        />
+      </FormRow>
       <FormRowWithDatePicker
         label="시작 날짜"
         error={errors.startDate?.message}
       >
         <Controller
+          disabled={isWorking}
           name="startDate"
           control={control}
           rules={{ required: "시작 날짜가 필요합니다." }}
@@ -111,14 +144,13 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
           )}
         />
       </FormRowWithDatePicker>
-
       <FormRowWithDatePicker label="종료 날짜" error={errors.endDate?.message}>
         <Controller
           name="endDate"
           control={control}
-          rules={{ required: "종료 날짜가 필요합니다." }}
           render={({ field }) => (
             <StyledDatePicker
+              disabled={isWorking}
               {...field}
               selected={field.value}
               onChange={(date) => field.onChange(date)}
@@ -127,17 +159,17 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
           )}
         />
       </FormRowWithDatePicker>
-
-      <FormRow label="설명" error={errors?.description?.message}>
+      <FormRow label="설명">
         <Textarea
+          disabled={isWorking}
           id="description"
-          {...register("description", { required: "설명이 필요합니다." })}
+          {...register("description")}
         />
       </FormRow>
-
       <FormRow label="색상">
         <div>
           <Input
+            disabled={isWorking}
             type="text"
             id="color"
             {...register("color")}
@@ -156,19 +188,29 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
                 }}
                 onClick={handleColorClose}
               />
-              <ChromePicker color={selectedColor} onChange={handleChange} />
+              <ChromePicker
+                disabled={isWorking}
+                color={selectedColor}
+                onChange={handleChange}
+              />
             </div>
           ) : null}
         </div>
       </FormRow>
 
       <FormRow label="영수증 또는 이미지">
-        <FileInput id="receipt" accept="image/*" onChange={handleFileChange} />
+        <FileInput
+          disabled={isWorking}
+          id="image"
+          {...register("image")}
+        />
       </FormRow>
 
       <FormRow>
-        <Button type="submit">생성</Button>
-        <Button type="button" onClick={closeModal}>
+        <Button type="submit" disabled={isWorking}>
+          생성
+        </Button>
+        <Button type="button" onClick={closeModal} disabled={isWorking}>
           취소
         </Button>
       </FormRow>
