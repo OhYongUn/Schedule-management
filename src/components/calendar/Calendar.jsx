@@ -9,8 +9,12 @@ import "./calendar.css";
 import ScheduleModal from "@/features/schedule/ScheduleModal.jsx";
 import CreateScheduleForm from "@/features/schedule/CreateScheduleForm.jsx";
 import EditScheduleForm from "@/features/schedule/EditScheduleForm.jsx";
+import { useSchedules } from "@/features/schedule/useSchedules.js";
+import Spinner from "@/ui/Spinner.jsx";
 
 function Calendar() {
+  const { isLoading, schedules } = useSchedules();
+
   const buttonRef = useRef(null); // 버튼 참조 생성
   const [isOpenAddModal, setIsOpenAddModal] = useState(false);
   const [isOpenEditModal, setIsOpenEditModal] = useState(false);
@@ -18,13 +22,13 @@ function Calendar() {
   const [lastClickTime, setLastClickTime] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null); // 등록을 위한 선택된 날짜
   const [selectedEventId, setSelectedEventId] = useState(null);
+
   const handleDateClick = (arg) => {
     const currentTime = new Date().getTime();
 
     if (lastClickTime && currentTime - lastClickTime < 300) {
       setIsOpenAddModal(true);
-      setSelectedDate(arg.dateStr);
-
+      setSelectedDate(new Date(arg.dateStr));
       setTimeout(() => {
         buttonRef.current?.click();
       }, 0);
@@ -48,6 +52,15 @@ function Calendar() {
       setLastClick(clickTime);
     }
   };
+  if (isLoading) return <Spinner />;
+  const calendarEvents = schedules.map(schedule => ({
+    title: schedule.details.title, // details 객체 내의 title 참조
+    start: schedule.details.startDate, // details 객체 내의 startDate 참조
+    end: schedule.details.endDate, // details 객체 내의 endDate 참조
+    color: schedule.details.color // details 객체 내의 color 참조
+  }));
+
+  console.log("calendarEvents", calendarEvents);
   return (
     <>
       <FullCalendar
@@ -58,42 +71,25 @@ function Calendar() {
           center: "title",
           right: "dayGridMonth,timeGridWeek,timeGridDay",
         }}
-        events={[
-          {
-            title: "event 1",
-            start: "2024-02-10",
-            end: "2024-02-13",
-            color: "#ff9f89",
-          },
-          {
-            title: "event 2",
-            start: "2024-02-10T12:00:00",
-            end: "2024-02-10T14:00:00",
-            color: "#fbd75b",
-          },
-          {
-            title: "event 3",
-            start: "2024-02-10T15:00:00",
-            end: "2024-02-10T17:00:00",
-            color: "#a4bdfc",
-          },
-          { title: "event 4", start: "2024-02-11", color: "#7ae7bf" }, // 종료 날짜가 없는 경우 시작 날짜만으로 하루 종일 이벤트로 처리됩니다.
-        ]}
+        events={calendarEvents}
         locale={koLocale}
         dateClick={handleDateClick}
         eventClick={handleEventClick}
+        eventContent={(eventInfo) => {
+          // 이벤트 타이틀만 표시하고 싶을 때 커스텀 렌더링
+          return { html: `<b>${eventInfo.event.title}</b>` };
+        }}
       />
       {isOpenAddModal && (
-          <ScheduleModal buttonRef={buttonRef} modalName="schedule-form">
-            <CreateScheduleForm selectedDate={selectedDate} />
-          </ScheduleModal>
+        <ScheduleModal buttonRef={buttonRef} modalName="schedule-form">
+          <CreateScheduleForm selectedDate={selectedDate} />
+        </ScheduleModal>
       )}
       {isOpenEditModal && (
-          <ScheduleModal buttonRef={buttonRef} modalName="edit-schedule-form">
-            <EditScheduleForm eventId={selectedEventId} />
-          </ScheduleModal>
+        <ScheduleModal buttonRef={buttonRef} modalName="edit-schedule-form">
+          <EditScheduleForm eventId={selectedEventId} />
+        </ScheduleModal>
       )}
-
     </>
   );
 }

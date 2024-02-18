@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { useGroup } from "@/features/group/useGroup.js";
 import { useCategory } from "@/features/category/useCategory.js";
 import { useCreateSchedule } from "@/features/schedule/useCreateSchedule.js";
+import { useQueryClient } from "@tanstack/react-query";
 
 const StyledDatePicker = styled(DatePicker)`
   width: 100%;
@@ -43,18 +44,25 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
   useEffect(() => {
     setValue("startDate", selectedDate);
   }, [selectedDate, setValue]);
+
+  const queryClient = useQueryClient();
+
+  const user = queryClient.getQueryData(["user"]);
+
   const onSubmit = (data) => {
     console.log("Form data:", data);
-      const image = typeof data.image === "string" ? data.image : data.image[0];
+    debugger;
+    const image = typeof data.image === "string" ? data.image : data.image[0];
+    const { group_id, category_id, ...details } = getValues();
 
-      const { group_id, category_id, ...details } = getValues();
     const eventData = {
       group_id,
       category_id,
+      user_id: user.id,
       details: JSON.stringify(details),
     };
     createSchedule(
-      { ...eventData,image },
+      { ...eventData, image },
       {
         onSuccess: () => {
           reset();
@@ -63,8 +71,18 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
     );
   };
 
+  const getRandomColor = () => {
+    // 16진수 색상 코드에서 가능한 문자열
+    const letters = "0123456789ABCDEF";
+    let color = "#";
+    // 6자리 16진수 색상 코드 생성
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+  };
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
-  const [selectedColor, setSelectedColor] = useState("#ffffff");
+  const [selectedColor, setSelectedColor] = useState(getRandomColor());
 
   const handleColorClick = () => {
     setDisplayColorPicker(!displayColorPicker);
@@ -73,8 +91,9 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
     setDisplayColorPicker(false);
   };
 
-  const handleChange = (newColor) => {
+  const handleColorChange = (newColor) => {
     setSelectedColor(newColor.hex);
+    setValue("color", newColor.hex);
   };
 
   return (
@@ -126,25 +145,32 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
         />
       </FormRow>
       <FormRowWithDatePicker
-        label="시작 날짜"
+        label="시작 날짜 및 시간"
         error={errors.startDate?.message}
       >
         <Controller
           disabled={isWorking}
           name="startDate"
           control={control}
-          rules={{ required: "시작 날짜가 필요합니다." }}
+          rules={{ required: "시작 날짜 및 시간이 필요합니다." }}
           render={({ field }) => (
             <StyledDatePicker
               {...field}
               selected={field.value}
               onChange={(date) => field.onChange(date)}
-              dateFormat="yyyy/MM/dd"
+              dateFormat="yyyy/MM/dd HH:mm" // 날짜와 시간 포맷
+              showTimeSelect // 시간 선택 활성화
+              timeFormat="HH:mm" // 시간 포맷
+              timeIntervals={30} // 분 선택 간격 (예: 15분 간격)
             />
           )}
         />
       </FormRowWithDatePicker>
-      <FormRowWithDatePicker label="종료 날짜" error={errors.endDate?.message}>
+
+      <FormRowWithDatePicker
+        label="종료 날짜 및 시간"
+        error={errors.endDate?.message}
+      >
         <Controller
           name="endDate"
           control={control}
@@ -154,7 +180,10 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
               {...field}
               selected={field.value}
               onChange={(date) => field.onChange(date)}
-              dateFormat="yyyy/MM/dd"
+              dateFormat="yyyy/MM/dd HH:mm" // 날짜와 시간 포맷
+              showTimeSelect // 시간 선택 활성화
+              timeFormat="HH:mm" // 시간 포맷
+              timeIntervals={30} // 분 선택 간격 (예: 15분 간격)
             />
           )}
         />
@@ -191,7 +220,7 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
               <ChromePicker
                 disabled={isWorking}
                 color={selectedColor}
-                onChange={handleChange}
+                onChange={handleColorChange}
               />
             </div>
           ) : null}
@@ -199,11 +228,7 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
       </FormRow>
 
       <FormRow label="영수증 또는 이미지">
-        <FileInput
-          disabled={isWorking}
-          id="image"
-          {...register("image")}
-        />
+        <FileInput disabled={isWorking} id="image" {...register("image")} />
       </FormRow>
 
       <FormRow>
