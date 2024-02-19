@@ -47,7 +47,7 @@ export async function createEditSchedule(newSchedule, id) {
     return data;
   } else {
     // 기존 이벤트 수정
-    const { data, error } = await query.update(eventData).eq("id", id);
+    const { data, error } = await query.update(eventData).eq("event_id", id);
     if (error) throw new Error("이벤트 수정 실패");
     return data;
   }

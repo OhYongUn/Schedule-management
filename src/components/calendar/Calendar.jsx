@@ -11,23 +11,24 @@ import CreateScheduleForm from "@/features/schedule/CreateScheduleForm.jsx";
 import EditScheduleForm from "@/features/schedule/EditScheduleForm.jsx";
 import { useSchedules } from "@/features/schedule/useSchedules.js";
 import Spinner from "@/ui/Spinner.jsx";
+import { toast } from "react-hot-toast";
 
 function Calendar() {
   const { isLoading, schedules } = useSchedules();
 
   const buttonRef = useRef(null); // 버튼 참조 생성
-  const [isOpenAddModal, setIsOpenAddModal] = useState(false);
-  const [isOpenEditModal, setIsOpenEditModal] = useState(false);
+  const [isModal, setIsModal] = useState(false);
   const [lastClick, setLastClick] = useState(null);
   const [lastClickTime, setLastClickTime] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null); // 등록을 위한 선택된 날짜
-  const [selectedEventId, setSelectedEventId] = useState(null);
-
+  const [isEdit, setIsEdit] = useState(false);
+  const [selectSchedule, setSelectSchedule] = useState({});
   const handleDateClick = (arg) => {
     const currentTime = new Date().getTime();
 
     if (lastClickTime && currentTime - lastClickTime < 300) {
-      setIsOpenAddModal(true);
+      setIsEdit(false);
+      setIsModal(true);
       setSelectedDate(new Date(arg.dateStr));
       setTimeout(() => {
         buttonRef.current?.click();
@@ -38,12 +39,18 @@ function Calendar() {
     }
   };
   const handleEventClick = ({ event }) => {
+
     const clickTime = new Date(); // 현재 클릭의 시간
-
     if (lastClick && clickTime - lastClick < 300) {
-      setIsOpenEditModal(true);
-      setSelectedEventId(event.id); // 클릭한 이벤트의 ID 저장
+      const eventId = event.extendedProps.event_id; // get the event_id
+      const data = schedules.find((s) => s.event_id === eventId);
 
+      if (!data) {
+        return toast.error("다시 선택해주세요");
+      }
+      setSelectSchedule(data);
+      setIsEdit(true);
+      setIsModal(true);
       setTimeout(() => {
         buttonRef.current?.click();
       }, 0);
@@ -53,14 +60,14 @@ function Calendar() {
     }
   };
   if (isLoading) return <Spinner />;
-  const calendarEvents = schedules.map(schedule => ({
+  const calendarEvents = schedules.map((schedule) => ({
     title: schedule.details.title, // details 객체 내의 title 참조
     start: schedule.details.startDate, // details 객체 내의 startDate 참조
     end: schedule.details.endDate, // details 객체 내의 endDate 참조
-    color: schedule.details.color // details 객체 내의 color 참조
+    color: schedule.details.color, // details 객체 내의 color 참조
+    event_id: schedule.event_id,
   }));
 
-  console.log("calendarEvents", calendarEvents);
   return (
     <>
       <FullCalendar
@@ -80,14 +87,13 @@ function Calendar() {
           return { html: `<b>${eventInfo.event.title}</b>` };
         }}
       />
-      {isOpenAddModal && (
+      {isModal && (
         <ScheduleModal buttonRef={buttonRef} modalName="schedule-form">
-          <CreateScheduleForm selectedDate={selectedDate} />
-        </ScheduleModal>
-      )}
-      {isOpenEditModal && (
-        <ScheduleModal buttonRef={buttonRef} modalName="edit-schedule-form">
-          <EditScheduleForm eventId={selectedEventId} />
+          <CreateScheduleForm
+            isEdit={isEdit}
+            selectedSchedule={selectSchedule}
+            selectedDate={selectedDate}
+          />
         </ScheduleModal>
       )}
     </>

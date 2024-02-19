@@ -17,16 +17,57 @@ import { useGroup } from "@/features/group/useGroup.js";
 import { useCategory } from "@/features/category/useCategory.js";
 import { useCreateSchedule } from "@/features/schedule/useCreateSchedule.js";
 import { useQueryClient } from "@tanstack/react-query";
+import {useEditSchedule} from "@/features/schedule/useEditSchedule.js";
 
 const StyledDatePicker = styled(DatePicker)`
   width: 100%;
 `;
 
-function CreateScheduleForm({ selectedDate, closeModal }) {
+function CreateScheduleForm({
+  isEdit,
+  selectedSchedule,
+  selectedDate,
+  closeModal,
+}) {
   // 커스텀 훅을 사용하여 카테고리와 그룹 데이터를 불러옵니다.
   const { categories, isLoadingCategories } = useCategory();
   const { groups, isLoadingGroups } = useGroup();
 
+  useEffect(() => {
+    if (!isLoadingCategories && !isLoadingGroups) {
+      if (isEdit && selectedSchedule) {
+        console.log("selectedSchedule", selectedSchedule);
+
+        // startDate, endDate 데이터 타입 확인
+        console.log(
+          "startDate type:",
+          typeof selectedSchedule.details.startDate,
+        );
+        console.log("endDate type:", typeof selectedSchedule.details.endDate);
+
+        // 데이터 타입에 맞게 처리
+        const parsedStartDate =
+          typeof selectedSchedule.details.startDate === "string"
+            ? new Date(selectedSchedule.details.startDate)
+            : selectedSchedule.details.startDate;
+        const parsedEndDate =
+          typeof selectedSchedule.details.endDate === "string"
+            ? new Date(selectedSchedule.details.endDate)
+            : selectedSchedule.details.endDate;
+        setValue("startDate", parsedStartDate);
+        setValue("endDate", parsedEndDate);
+        setValue("title", selectedSchedule.details.title);
+        setValue("description", selectedSchedule.details.description);
+        setValue("color", selectedSchedule.details.color);
+        setValue("amount", selectedSchedule.details.amount);
+        setSelectedColor(selectedSchedule.details.color);
+        setValue("group_id", selectedSchedule.group_id); // typo 수정
+        setValue("category_id", selectedSchedule.category_id);
+      } else if (selectedDate) {
+        setValue("startDate", selectedDate);
+      }
+    }
+  }, [isEdit]);
   const {
     register,
     reset,
@@ -39,11 +80,8 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
   const { errors } = formState;
 
   const { isCreating, createSchedule } = useCreateSchedule();
+   const {editSchedule, isEditing}=useEditSchedule()
   const isWorking = isCreating;
-
-  useEffect(() => {
-    setValue("startDate", selectedDate);
-  }, [selectedDate, setValue]);
 
   const queryClient = useQueryClient();
 
@@ -51,7 +89,6 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
 
   const onSubmit = (data) => {
     console.log("Form data:", data);
-    debugger;
     const image = typeof data.image === "string" ? data.image : data.image[0];
     const { group_id, category_id, ...details } = getValues();
 
@@ -61,14 +98,21 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
       user_id: user.id,
       details: JSON.stringify(details),
     };
-    createSchedule(
-      { ...eventData, image },
-      {
-        onSuccess: () => {
-          reset();
-        },
-      },
-    );
+    if (isEdit) {
+      editSchedule({
+        id: selectedSchedule.event_id,
+        data: { ...eventData, image }
+      })
+    } else {
+      createSchedule(
+          { ...eventData, image },
+          {
+            onSuccess: () => {
+              reset();
+            },
+          },
+      );
+    }
   };
 
   const getRandomColor = () => {
@@ -139,7 +183,7 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
       <FormRow label="금액" error={errors?.eventName?.message}>
         <Input
           disabled={isWorking}
-          type="number"
+          type="text"
           id="amount"
           {...register("amount", { required: "금액이 필요합니다." })}
         />
@@ -233,7 +277,7 @@ function CreateScheduleForm({ selectedDate, closeModal }) {
 
       <FormRow>
         <Button type="submit" disabled={isWorking}>
-          생성
+          {isEdit ? "수정" : "생성"}
         </Button>
         <Button type="button" onClick={closeModal} disabled={isWorking}>
           취소
