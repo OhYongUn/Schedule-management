@@ -31,19 +31,19 @@ export async function createEditSchedule(newSchedule, id) {
     imagePath: imagePath,
     originalFileName: originalFileName,
   };
-
-  let eventData = {
+  const eventData = {
     group_id: newSchedule.group_id,
     category_id: newSchedule.category_id,
+    start_date:newSchedule.start_date,
+    end_date:newSchedule.end_date,
     user_id:newSchedule.user_id,
     details: JSON.stringify(details),
   };
 
-
   if (!id) {
     // 새 이벤트 생성
     const { data, error } = await query.insert([eventData]);
-    if (error) throw new Error("이벤트 생성 실패");
+    if (error) throw new Error("이벤트 생성 실패");console.log(error);
     return data;
   } else {
     // 기존 이벤트 수정
@@ -53,21 +53,42 @@ export async function createEditSchedule(newSchedule, id) {
   }
 }
 
-export async function getSchedules(){
-  const { data, error } = await query.select("*");
-    console.log('data',data);
+export async function getSchedules(searchParams){
+  debugger;
+  const { startDate, endDate, category, group, title } = searchParams;
+
+  let query = supabase
+      .from('events')
+      .select('*')
+      .gte('start_date', startDate)
+      .lte('start_date', endDate)
+      .or(`end_date.gte.${startDate},end_date.lte.${endDate}`);
+
+  // 추가 검색 조건이 있는 경우, 쿼리에 포함합니다.
+  if (category) {
+    query = query.eq('category_id', category);
+  }
+  if (group) {
+    query = query.eq('group_id', group);
+  }
+  if (title) {
+    query = query.ilike('details->>title', `%${title}%`); // 'details' 컬럼 내의 'title' 필드를 대소문자 구분 없이 검색
+
+  }
+
+  const { data, error } = await query;
+
   if (error) {
     console.error("Error fetching schedules:", error);
     throw error;
   }
-
-  // 각 이벤트의 'details' 컬럼을 JavaScript 객체로 변환
-  const parsedData = data.map((event) => ({
-    ...event,
-    details: event.details ? JSON.parse(event.details) : {},
-  }));
-
-  // 파싱된 데이터를 반환
+  const parsedData = data.map(event => {
+    const details = event.details ? JSON.parse(event.details) : {};
+    return {
+      ...event,
+      details,
+    };
+  });
   return parsedData;
-}
 
+}
