@@ -6,7 +6,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import koLocale from '@fullcalendar/core/locales/ko';
 import "@/components/calendar/calendar.css";
 
-const CalendarForm = ({ schedules, handleDateClick, handleEventClick }) => {
+const CalendarForm = ({ schedules, handleDateClick, handleEventClick,handleDatesSet }) => {
     return (
         <FullCalendar
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -20,6 +20,7 @@ const CalendarForm = ({ schedules, handleDateClick, handleEventClick }) => {
             locale={koLocale}
             dateClick={handleDateClick}
             eventClick={handleEventClick}
+            datesSet={handleDatesSet}
             eventContent={(eventInfo) => {
                 return { html: `<b>${eventInfo.event.title}</b>` };
             }}

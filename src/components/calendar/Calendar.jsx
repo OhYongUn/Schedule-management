@@ -7,21 +7,44 @@ import { useCategory } from "@/features/category/useCategory.js";
 import { useGroup } from "@/features/group/useGroup.js";
 import Search from "@/ui/Search.jsx";
 import MuiModal from "@/ui/MuiModal.jsx";
-import { useQueryClient } from "@tanstack/react-query";
 import CalendarForm from "@/ui/CalendarForm.jsx";
 
 function Calendar() {
   const { categories, isLoadingCategories } = useCategory();
   const { groups, isLoadingGroups } = useGroup();
-  const queryClient = useQueryClient(); // QueryClient 인스턴스를 가져옵니다.
 
-  const { isLoading, schedules } = useSchedules();
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      .toISOString()
+      .split("T")[0];
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      .toISOString()
+      .split("T")[0];
+
+  // searchParams 상태를 초기화
+  const [searchParams, setSearchParams] = useState({
+    category: "",
+    group: "",
+    title: "",
+    startDate: firstDayOfMonth,
+    endDate: lastDayOfMonth,
+  });
+
+
+  const { isLoading, schedules } = useSchedules(searchParams);
+
   const [isModal, setIsModal] = useState(false);
   const [lastClickTime, setLastClickTime] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null); // 등록을 위한 선택된 날짜
   const [isEdit, setIsEdit] = useState(false);
   const [selectSchedule, setSelectSchedule] = useState({});
-  const [filteredSchedules, setFilteredSchedules] = useState([]);
+  const handleDatesSet = ({ startStr, endStr }) => {
+    setSearchParams((prev) => ({
+      ...prev,
+      startDate: startStr.split("T")[0], // 날짜만 추출
+      endDate: endStr.split("T")[0], // 날짜만 추출
+    }));
+  };
 
   const handleDateClick = (arg) => {
     const currentTime = new Date().getTime();
@@ -34,6 +57,16 @@ function Calendar() {
     } else {
       setLastClickTime(currentTime);
     }
+  };
+
+
+  const handleSearch = (searchCriteria) => {
+    setSearchParams((prev) => ({
+      ...prev, // 기존 상태 유지
+      ...searchCriteria, // 새로운 검색 조건 적용
+      startDate: searchCriteria.startDate || prev.startDate, // startDate가 없으면 기존 값 유지
+      endDate: searchCriteria.endDate || prev.endDate, // endDate가 없으면 기존 값 유지
+    }));
   };
 
   const handleEventClick = ({ event }) => {
@@ -57,53 +90,39 @@ function Calendar() {
       setLastClickTime(currentTime); // 현재 시간을 마지막 클릭 시간으로 설정
     }
   };
-  const handleSearch = (data) => {
-    const schedules = queryClient.getQueryData(["schedules"]);
-    const filtered = schedules.filter((schedule) => {
-      const isCategoryMatch =
-        !data.category || schedule.category_id === data.category;
-      const isGroupMatch = !data.group || schedule.group_id === data.group;
-      const isTitleMatch =
-        !data.title ||
-        schedule.details.title.toLowerCase().includes(data.title.toLowerCase());
-      return isCategoryMatch && isGroupMatch && isTitleMatch;
-    });
-
-    setFilteredSchedules(filtered.length > 0 ? filtered : null); // 검색 결과가 있으면 저장, 없으면 null
-  };
 
   if (isLoading || isLoadingCategories || isLoadingGroups) return <Spinner />;
   // 검색 결과가 있으면 filteredSchedules 사용, 없으면 schedules 사용
-  const calendarEvents = (
-    filteredSchedules.length > 0 ? filteredSchedules : schedules
-  ).map((schedule) => ({
+  const calendarEvents = (schedules).map((schedule) => ({
     title: schedule.details.title,
-    start: schedule.details.startDate,
-    end: schedule.details.endDate,
+    start: schedule.start_date,
+    end: schedule.end_date,
     color: schedule.details.color,
     event_id: schedule.event_id,
   }));
 
+
   return (
-    <>
-      <Search categories={categories} groups={groups} onSearch={handleSearch} />
-      <CalendarForm
-        schedules={calendarEvents}
-        handleDateClick={handleDateClick}
-        handleEventClick={handleEventClick}
-      />
-      {isModal && (
-        <MuiModal open={isModal} handleClose={() => setIsModal(false)}>
-          <CreateScheduleForm
-            categories={categories}
-            groups={groups}
-            isEdit={isEdit}
-            selectedSchedule={selectSchedule}
-            selectedDate={selectedDate}
-          />
-        </MuiModal>
-      )}
-    </>
+      <>
+        <Search categories={categories} groups={groups} onSearch={handleSearch} />
+        <CalendarForm
+            schedules={calendarEvents}
+            handleDateClick={handleDateClick}
+            handleEventClick={handleEventClick}
+            handleDatesSet={handleDatesSet}
+        />
+        {isModal && (
+            <MuiModal open={isModal} handleClose={() => setIsModal(false)}>
+              <CreateScheduleForm
+                  categories={categories}
+                  groups={groups}
+                  isEdit={isEdit}
+                  selectedSchedule={selectSchedule}
+                  selectedDate={selectedDate}
+              />
+            </MuiModal>
+        )}
+      </>
   );
 }
 
